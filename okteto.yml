@@ -1,6 +1,6 @@
 deploy:
   compose:
-    - file: nginx.yml
+    - file: nginx.yaml
       services:
         - frontend
   endpoints:
