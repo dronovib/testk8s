@@ -50,8 +50,8 @@ spec:
       storage: 100M
 
 ---
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
   name: nc-db           # < service name (see link with statufulset yaml)
 spec:
