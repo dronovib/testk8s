@@ -1,0 +1,10 @@
+deploy:
+  compose:
+    - file: nginx.yml
+      services:
+        - frontend
+  endpoints:
+    - path: /
+      service: frontend
+      port: 80
+
