@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nc-db
+  name: nc-db
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nc-db
+  template:
+    metadata:
+      labels:
+        app: nc-db
+    spec:
+      containers:
+      - image: linuxserver/mariadb
+        name: nc-db
+        env:
+        - name: MYSQL_DATABASE
+          value: nc-db
+        - name: MYSQL_PASSWORD
+          value: ncpassword
+        - name: MYSQL_USER
+          value: nc-user
+        - name: MYSQL_ROOT_PASSWORD
+          value: root
+        volumeMounts:
+          - mountPath: /config    ###/var/lib/mysql
+            name: nc-db
+      restartPolicy: Always
+      volumes:
+        - name: nc-db
+          persistentVolumeClaim:
+            claimName: nc-db-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nc-db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100M
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: nc-db           # < service name (see link with statufulset yaml)
+spec:
+  selector:
+    app: nc-db        # < reference to the statefulset (connects the service with the statefulset)
+  ports:
+    - name: mysql
+      protocol: TCP
+      port: 3306

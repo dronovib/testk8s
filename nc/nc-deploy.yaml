@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nc
+  name: nc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nc
+  strategy:
+##    type: Recreate
+    rollingUpdate:
+      maxSurge: 0                  # < The number of pods that can be created above the desired amount of pods during an update
+      maxUnavailable: 1            # < The number of pods that can be unavailable during the update process
+    type: RollingUpdate            # < New pods are added gradually, and old pods are terminated gradually
+  template:
+    metadata:
+      labels:
+        app: nc
+    spec:
+      containers:
+      - name: nc
+        image: lscr.io/linuxserver/nextcloud:latest
+        imagePullPolicy: Always
+        env:
+        - name: TZ
+          value: Europe/Moscow
+        - name: DEBUG
+          value: "false"
+        - name: NEXTCLOUD_URL
+          value: https://nc-dronovib.cloud.okteto.net
+##        - name: NEXTCLOUD_ADMIN_USER
+##          value: admin
+##        - name: NEXTCLOUD_ADMIN_PASSWORD
+##          value: admin
+##        - name: NEXTCLOUD_UPLOAD_MAX_FILESIZE
+##          value: 4G
+##        - name: NEXTCLOUD_MAX_FILE_UPLOADS
+##          value: "20"
+##        - name: MYSQL_DATABASE
+##          value: nc-db
+##        - name: MYSQL_HOST
+##          value: nc-db
+##        - name: MYSQL_PASSWORD
+##          value: ncpassword
+##        - name: MYSQL_USER
+##          value: nc-user
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        - mountPath: /data
+          name: data
+      restartPolicy: Always
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: nc-config-pvc
+        - name: data
+          persistentVolumeClaim:
+            claimName: nc-data-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nc-data-pvc
+spec:
+  accessModes: 
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200M
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nc-config-pvc
+spec:
+  accessModes: 
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50M
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nc
+  labels:
+    app: nc
+  annotations:
+    dev.okteto.com/auto-ingress: "true"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: nc
